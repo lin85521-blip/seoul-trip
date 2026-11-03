@@ -1,6 +1,6 @@
 {
-  "name": "首爾冬日四天",
-  "short_name": "首爾冬日",
+  "name": "Seoul Trip",
+  "short_name": "Seoul Trip",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#BCD1DE",
