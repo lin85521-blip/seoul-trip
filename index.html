@@ -445,10 +445,10 @@ function vList(){
   const done=arr.filter(i=>i.done).length;
   let top,body;
   if(S.listSeg==="prep"){
-    const groups=[...new Set(arr.slice().sort((a,b)=>(a.order||0)-(b.order||0)).map(i=>i.group||"其他"))];
+    const groups=prepGroups().filter(g=>arr.some(i=>(i.group||"其他")===g));
     const rows=groups.map(g=>{const gi=arr.filter(i=>(i.group||"其他")===g);return {label:g,pct:Math.round(gi.filter(i=>i.done).length/gi.length*100)}});
     top=`<div class="bignum"><div class="n">${done}<small> / ${arr.length}</small></div><p>出發前的準備，一項一項打勾吧。</p></div>
-    ${rows.length?`<div class="card" style="margin-top:22px"><div class="cardh"><b>分類進度</b><span class="small muted">每一類完成了多少</span></div>${pbars(rows)}</div>`:""}`;
+    ${rows.length?`<div class="card" style="margin-top:22px"><div class="sec-h" style="margin:0;align-items:flex-start"><div class="cardh"><b>分類進度</b><span class="small muted">每一類完成了多少</span></div><button class="seeall" data-w data-edit-meta="groups" style="color:var(--link)">編輯分類</button></div>${pbars(rows)}</div>`:""}`;
     const open=groups.filter(g=>arr.some(i=>!i.done&&(i.group||"其他")===g));
     body=open.map(g=>`<div class="eyebrow">${esc(g)}</div><div class="list">${arr.filter(i=>!i.done&&(i.group||"其他")===g).map(itemRow).join("")}</div>`).join("")+(done?`<div class="eyebrow">已完成・${done}</div><div class="list">${arr.filter(i=>i.done).map(itemRow).join("")}</div>`:"");
   }else{
@@ -461,6 +461,9 @@ function vList(){
   <section class="sec"><div class="sec-h"><h2>${S.listSeg==="prep"?"待辦":"想買的東西"}</h2><span class="small muted">完成 ${done} / ${arr.length}</span></div>${arr.length?body:`<div class="empty">清單是空的。</div>`}</section>
   <button class="cta" data-w data-new="items" data-kind="${S.listSeg}">${S.listSeg==="prep"?"新增準備項目":"新增想買的東西"}</button>`;
 }
+/* 行前準備的分類：存在設定的 prepGroups（一行一個）。還沒設定過就用項目現有的分類。 */
+function prepGroups(){const seen=[...new Set(S.items.filter(i=>i.kind==="prep").sort((a,b)=>(a.order||0)-(b.order||0)).map(i=>i.group||"其他"))];
+  const m=String(S.meta.prepGroups||"").split("\n").map(x=>x.trim()).filter(Boolean);const list=m.length?m:seen;return [...list,...seen.filter(g=>!list.includes(g))]}
 function itemRow(i){const sub=i.kind==="shop"?[whoLabel(i.who),i.where,i.price?fmtK(i.price)+(i.qty>1?" × "+i.qty:"")+"（"+fmtT((+i.price)*(+i.qty||1)/rate())+"）":"",i.note].filter(Boolean).join("・"):[whoLabel(i.who),i.note].filter(Boolean).join("・");
   return `<div class="row ${i.done?"done":""}"><button class="chk ${i.done?"on":""}" data-toggle="${i.id}" aria-label="${i.done?"取消完成":"標記完成"}" ${S.canWrite?"":"disabled"}></button><div class="body"><button class="rowbtn" data-open="items:${i.id}"><div class="t1">${esc(i.text)}</div>${sub?`<div class="t2">${esc(sub)}</div>`:""}</button>${linkRow(i.links)}</div></div>`}
 
@@ -517,7 +520,7 @@ const FORMS={
   places:{title:"地點",fields:[["name","名稱","text",{req:1}],["nameKo","韓文名稱（搜尋地圖、給司機看）","text"],["cat","類別","select",{opts:Object.entries(CATS).map(([k,v])=>[k,v.label])}],["area","區域","text",{ph:"例：聖水洞",hint:"同一區寫法一致，「景點」分頁才會分在同一組。",dl:()=>[...new Set(S.places.map(p=>String(p.area||"").trim()).filter(Boolean))]}],["coords","座標","text",{ph:"37.5446, 127.0557",hint:"在 Google 地圖長按該地點會出現座標，複製貼上即可；貼 Google 地圖網址也行。有座標才會出現導航按鈕。"}],["day","排在哪一天","select",{opts:DAYOPTS}],["time","時間","time"],["note","備註","textarea",{ph:"營業時間、公休日、要不要預約…"}],["links","連結（一行一個）","textarea",{ph:"推薦影片 https:\/\/youtu.be/…\nhttps:\/\/blog.naver.com/…",hint:"網址前面可以寫名稱；沒寫會自動顯示網站名稱，例如 YouTube。"}]]},
   flights:{title:"航班",fields:[["leg","去程或回程","select",{opts:[["去程","去程"],["回程","回程"]]}],["who","誰的航班","select",{opts:WHO}],["from","出發機場代碼","text",{ph:"KHH"}],["to","抵達機場代碼","text",{ph:"GMP"}],["date","日期","text",{ph:"12/12"}],["airline","航空公司","text"],["no","航班編號","text"],["dep","起飛時間","time"],["arr","抵達時間（當地）","time"],["status","狀態","select",{opts:[["todo","未購票"],["booked","已購票"]]}],["note","備註（訂位代號、行李額度）","textarea"]]},
   routes:{title:"路線",fields:[["from","從","text",{req:1}],["to","到","text",{req:1}],["day","哪一天","select",{opts:[["0","常用路線"],...DAYS.map(d=>[String(d.n),`${d.d} ${d.w}`])]}],["mode","交通方式","text",{ph:"地鐵 5 號線"}],["steps","步驟","textarea",{ph:"金浦機場站 搭 5 號線往…\n在 ○○ 站 3 號出口出站"}],["mins","大約幾分鐘","text"],["cost","大約多少錢","text"],["note","備註","text"]]},
-  items:{title:"項目",fields:[["text","內容","text",{req:1}],["who","誰負責／誰要買","select",{opts:WHO}],["group","分類","text",{ph:"證件、電子、衣物…",only:"prep"}],["where","在哪買","text",{only:"shop"}],["price","單價（韓元）","number",{only:"shop"}],["qty","數量","number",{only:"shop"}],["note","備註","text"],["links","連結（一行一個）","textarea",{ph:"推薦影片 https:\/\/youtu.be/…\nhttps:\/\/blog.naver.com/…",hint:"網址前面可以寫名稱；沒寫會自動顯示網站名稱，例如 YouTube。"}]]},
+  items:{title:"項目",fields:[["text","內容","text",{req:1}],["who","誰負責／誰要買","select",{opts:WHO}],["group","分類","select",{opts:()=>prepGroups().map(g=>[g,g]),only:"prep",hint:"要新的分類，到「分類進度」旁邊按「編輯分類」。"}],["where","在哪買","text",{only:"shop"}],["price","單價（韓元）","number",{only:"shop"}],["qty","數量","number",{only:"shop"}],["note","備註","text"],["links","連結（一行一個）","textarea",{ph:"推薦影片 https:\/\/youtu.be/…\nhttps:\/\/blog.naver.com/…",hint:"網址前面可以寫名稱；沒寫會自動顯示網站名稱，例如 YouTube。"}]]},
   notes:{title:"筆記",fields:[["title","標題","text",{req:1}],["tag","標籤","select",{opts:[["","無"],["待確認","待確認"],["已確認","已確認"],["小知識","小知識"]]}],["body","內容","textarea"],["links","連結（一行一個）","textarea",{ph:"推薦影片 https:\/\/youtu.be/…\nhttps:\/\/blog.naver.com/…",hint:"網址前面可以寫名稱；沒寫會自動顯示網站名稱，例如 YouTube。"}]]},
   expenses:{title:"帳目",fields:[["title","花在什麼","text",{req:1,ph:"例：烤肉晚餐"}],["amount","金額","number",{req:1}],["cur","幣別","select",{opts:[["KRW","韓元 ₩"],["TWD","台幣 NT$"]]}],["payer","誰付的","select",{opts:()=>[["a",names().a],["b",names().b]]}],["split","怎麼分","select",{opts:SPLITS}],["day","哪一天","select",{opts:[["0","出發前・其他"],...DAYS.map(d=>[String(d.n),`${d.d} ${d.w}`])]}],["note","備註","text"]]},
 };
@@ -529,6 +532,7 @@ function openSheet(type,id,preset={}){
   if(type==="places"&&cur.url&&!cur.links)cur.links=cur.url;
   if(isMeta&&cur.stayLat)cur.stayCoords=cur.stayLat+", "+cur.stayLng;
   if(isMeta&&cur.rateAuto)cur.rate="";
+  if(isMeta&&id==="groups")prepGroups().forEach((g,i)=>cur["g"+i]=g);
   sheetState={type,id,cur,del:false};
   const kind=type==="items"?(cur.kind||S.listSeg):null;
   const fields=def.fields.filter(f=>!f[3]?.only||f[3].only===kind);
@@ -545,6 +549,8 @@ function openSheet(type,id,preset={}){
 }
 function metaForm(which){
   if(which==="stay")return{title:"住宿",fields:[["stayName","住宿名稱","text"],["stayKo","韓文名稱","text"],["stayAddr","地址（韓文最好，給司機看）","textarea"],["stayCoords","座標","text",{ph:"37.5565, 126.9237",hint:"填了就會在地圖上顯示「宿」"}],["stayNote","備註（入住時間、門鎖密碼提示…）","textarea"]]};
+  if(which==="groups"){const n=g=>S.items.filter(i=>i.kind==="prep"&&(i.group||"其他")===g).length;
+    return{title:"分類",fields:[...prepGroups().map((g,i)=>["g"+i,`分類 ${i+1}・${n(g)} 項`,"text",i===0?{hint:"直接改名稱，裡面的項目會跟著改。清空就是刪除，裡面的項目會移到「其他」。"}:{}]),["gnew1","新增分類","text",{ph:"例：藥品"}],["gnew2","新增分類","text"]]}}
   if(which==="themes")return{title:"每日主題",fields:DAYS.map(d=>["theme"+d.n,`${d.d} ${d.w} 主題`,"text",{ph:"例：聖水洞咖啡＋首爾林"}])};
   return{title:"設定",fields:[["title","旅程名稱","text"],["nameA","旅伴 A 稱呼（高雄出發）","text"],["nameB","旅伴 B 稱呼（桃園出發）","text"],["rate","1 台幣 = 幾韓元","number",{ph:"留空＝自動",hint:"留空會自動使用 Google 即時匯率"}],...DAYS.map(d=>["theme"+d.n,`${d.d} 主題`,"text"])]};
 }
@@ -580,6 +586,16 @@ document.addEventListener("submit",async e=>{
   if(type==="items"){data.kind=data.kind||S.listSeg;data.price=data.price?Number(data.price.replace(/,/g,""))||0:data.price;data.qty=data.qty?Number(data.qty)||1:data.qty;data.done=!!cur.done}
   for(const f of (type==="meta"?[]:FORMS[type].fields))if(f[3]?.req&&!data[f[0]]){toast("請填「"+f[1]+"」");return}
   closeSheet();
+  if(type==="meta"&&id==="groups"){
+    const old=prepGroups(),list=[],to={};
+    old.forEach((g,i)=>{const v=(data["g"+i]||"").trim();to[g]=v||"其他";if(v&&!list.includes(v))list.push(v)});
+    ["gnew1","gnew2"].forEach(k=>{const v=(data[k]||"").trim();if(v&&!list.includes(v))list.push(v)});
+    const moved=S.items.filter(i=>i.kind==="prep"&&to[i.group||"其他"]!==(i.group||"其他"));
+    moved.forEach(i=>{i.group=to[i.group||"其他"]});
+    if(moved.some(i=>i.group==="其他")&&!list.includes("其他"))list.push("其他");
+    S.meta.prepGroups=list.join("\n");render();
+    for(const i of moved)await save("items",i.id,{...i,updatedAt:Date.now()});
+    await send("saveMeta",[{prepGroups:S.meta.prepGroups}]);return}
   if(type==="meta"){delete data.stayCoords;delete data.rateAuto;if(data.rate!==undefined&&data.rate!==""&&isNaN(Number(data.rate))){toast("匯率請填數字，或留空使用即時匯率");return}S.meta={...S.meta,...data};if(data.rate==="")S.meta.rateAuto=true;else if(data.rate!==undefined)S.meta.rateAuto=false;render();await send("saveMeta",[data]);return}
   const nid=id||("x"+Date.now().toString(36)+Math.random().toString(36).slice(2,7));
   data.updatedAt=Date.now();if(!id){data.order=Date.now()}
