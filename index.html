@@ -191,6 +191,8 @@ details.note .nb .act{margin-top:10px;display:flex;justify-content:flex-end}
 .links{display:flex;flex-wrap:wrap;gap:6px}
 .links a{font-size:13px;text-decoration:none;border-radius:999px;padding:6px 12px;background:var(--sunk);color:var(--ink)}
 .links a.web{background:var(--lav);color:var(--lav-ink);font-weight:600}
+.mvrow{display:flex;gap:6px;align-items:center}.mvrow input{flex:1;min-width:0}
+.mvb{width:42px;height:42px;flex:none;border:0;border-radius:50%;background:var(--card);color:var(--ink);font-size:17px;padding:0}
 .links.mini{margin-top:8px}.links.mini a{font-size:12.5px;padding:5px 11px}
 .row .rowbtn{border:0;background:none;padding:0;text-align:left;width:100%;color:inherit;font:inherit;display:block}
 details.note .nb .links{margin-top:12px}
@@ -541,8 +543,9 @@ function openSheet(type,id,preset={}){
     let inp;if(t==="select"){const opts=typeof o.opts==="function"?o.opts():o.opts;inp=`<select id="${idf}" ${ro?"disabled":""}>${opts.map(([ov,ol])=>`<option value="${esc(ov)}" ${String(v)===String(ov)?"selected":""}>${esc(ol)}</option>`).join("")}</select>`}
     else if(t==="textarea")inp=`<textarea id="${idf}" placeholder="${esc(o.ph||"")}" ${ro?"readonly":""}>${esc(v)}</textarea>`;
     else inp=`<input id="${idf}" type="${t==="number"?"text":t}" ${t==="number"?'inputmode="decimal"':""} value="${esc(v)}" placeholder="${esc(o.ph||"")}" ${ro?"readonly":""} ${o.dl?`list="dl_${k}"`:""}>${o.dl?`<datalist id="dl_${k}">${o.dl().map(x=>`<option value="${esc(x)}">`).join("")}</datalist>`:""}`;
+    if(o.move&&!ro)inp=`<div class="mvrow">${inp}<button type="button" class="mvb" data-mv="-1" aria-label="往上移">↑</button><button type="button" class="mvb" data-mv="1" aria-label="往下移">↓</button></div>`;
     return `<div class="field"><label for="${idf}">${esc(l)}</label>${inp}${o.hint?`<div class="hint">${esc(o.hint)}</div>`:""}</div>`}).join("");
-  const extra=type==="places"&&id&&cur.name?`<div class="field"><label>導航與地圖</label>${mapLinks(cur,true)}</div>`:"";
+  const extra=isMeta&&id==="groups"?`<p class="small muted" style="margin:0 0 4px">按 ↑ ↓ 調整順序。直接改名稱，裡面的項目會跟著改；清空就是刪除，裡面的項目會移到「其他」。</p>`:type==="places"&&id&&cur.name?`<div class="field"><label>導航與地圖</label>${mapLinks(cur,true)}</div>`:"";
   $("#sheetRoot").innerHTML=`<div class="scrim" data-close></div><div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(def.title)}"><div class="in"><div class="grab"></div><h2>${id||isMeta?(ro?"":"編輯")+def.title:"新增"+def.title}</h2>${extra}<form id="sheetForm" class="list" style="gap:12px">${html}
   <div class="bar">${id&&!isMeta&&!ro?`<button type="button" class="btn danger" id="delBtn">刪除</button>`:"<span></span>"}<span style="display:flex;gap:8px"><button type="button" class="btn" data-close>${ro?"關閉":"取消"}</button>${ro?"":`<button type="submit" class="btn primary">儲存</button>`}</span></div></form></div></div>`;
   const first=$("#sheetForm input,#sheetForm select");if(first&&!id&&!isMeta)setTimeout(()=>first.focus(),60);
@@ -550,7 +553,7 @@ function openSheet(type,id,preset={}){
 function metaForm(which){
   if(which==="stay")return{title:"住宿",fields:[["stayName","住宿名稱","text"],["stayKo","韓文名稱","text"],["stayAddr","地址（韓文最好，給司機看）","textarea"],["stayCoords","座標","text",{ph:"37.5565, 126.9237",hint:"填了就會在地圖上顯示「宿」"}],["stayNote","備註（入住時間、門鎖密碼提示…）","textarea"]]};
   if(which==="groups"){const n=g=>S.items.filter(i=>i.kind==="prep"&&(i.group||"其他")===g).length;
-    return{title:"分類",fields:[...prepGroups().map((g,i)=>["g"+i,`分類 ${i+1}・${n(g)} 項`,"text",i===0?{hint:"直接改名稱，裡面的項目會跟著改。清空就是刪除，裡面的項目會移到「其他」。"}:{}]),["gnew1","新增分類","text",{ph:"例：藥品"}],["gnew2","新增分類","text"]]}}
+    return{title:"分類",fields:[...prepGroups().map((g,i)=>["g"+i,`分類・${n(g)} 項`,"text",{move:1}]),["gnew1","新增分類","text",{ph:"例：藥品"}],["gnew2","新增分類","text"]]}}
   if(which==="themes")return{title:"每日主題",fields:DAYS.map(d=>["theme"+d.n,`${d.d} ${d.w} 主題`,"text",{ph:"例：聖水洞咖啡＋首爾林"}])};
   return{title:"設定",fields:[["title","旅程名稱","text"],["nameA","旅伴 A 稱呼（高雄出發）","text"],["nameB","旅伴 B 稱呼（桃園出發）","text"],["rate","1 台幣 = 幾韓元","number",{ph:"留空＝自動",hint:"留空會自動使用 Google 即時匯率"}],...DAYS.map(d=>["theme"+d.n,`${d.d} 主題`,"text"])]};
 }
@@ -567,6 +570,7 @@ document.addEventListener("click",async e=>{
   const nw=t.closest("[data-new]");if(nw){const ty=nw.dataset.new;const pre={};if(ty==="places"){pre.day=nw.dataset.day||"0";pre.cat=nw.dataset.cat||"sight";if(nw.dataset.area)pre.area=nw.dataset.area}if(ty==="items")pre.kind=nw.dataset.kind||(S.listSeg==="shop"?"shop":"prep");if(ty==="flights"){pre.status="todo";pre.leg="去程";pre.who="a"}if(ty==="expenses"){pre.cur="KRW";pre.payer="a";pre.split="half";pre.day=String(tripDayToday()||0);if(nw.dataset.repay){const[d,c,amt]=nw.dataset.repay.split(":");Object.assign(pre,{title:"還款",payer:d,split:c,amount:amt})}}openSheet(ty,null,pre);return}
   const op=t.closest("[data-open]");if(op){const[ty,id]=op.dataset.open.split(":");openSheet(ty,id);return}
   const em=t.closest("[data-edit-meta]");if(em){openSheet("meta",em.dataset.editMeta);return}
+  const mv=t.closest("[data-mv]");if(mv){const f=mv.closest(".field"),d=+mv.dataset.mv,o=d<0?f.previousElementSibling:f.nextElementSibling;if(o&&o.querySelector("[data-mv]")){d<0?o.before(f):o.after(f);mv.focus()}return}
   const tg=t.closest("[data-toggle]");if(tg){const it=S.items.find(i=>i.id===tg.dataset.toggle);if(!it)return;it.done=!it.done;render();await save("items",it.id,{...it});return}
   const sgr=t.closest("[data-sgroup]");if(sgr){S.spotGroup=sgr.dataset.sgroup;render();return}
   const mc=t.closest("[data-mapcat]");if(mc){const k=mc.dataset.mapcat;S.mapCats.has(k)?S.mapCats.delete(k):S.mapCats.add(k);render();return}
@@ -588,7 +592,8 @@ document.addEventListener("submit",async e=>{
   closeSheet();
   if(type==="meta"&&id==="groups"){
     const old=prepGroups(),list=[],to={};
-    old.forEach((g,i)=>{const v=(data["g"+i]||"").trim();to[g]=v||"其他";if(v&&!list.includes(v))list.push(v)});
+    const order=[...e.target.querySelectorAll("input")].map(el=>el.id.slice(2)).filter(k=>/^g\d+$/.test(k)).map(k=>+k.slice(1));
+    order.forEach(i=>{const g=old[i];const v=(data["g"+i]||"").trim();to[g]=v||"其他";if(v&&!list.includes(v))list.push(v)});
     ["gnew1","gnew2"].forEach(k=>{const v=(data[k]||"").trim();if(v&&!list.includes(v))list.push(v)});
     const moved=S.items.filter(i=>i.kind==="prep"&&to[i.group||"其他"]!==(i.group||"其他"));
     moved.forEach(i=>{i.group=to[i.group||"其他"]});
