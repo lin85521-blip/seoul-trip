@@ -23,7 +23,7 @@
   --pink:#FFEFB9; --pink-ink:#8A5A1E; --lav:#E2ECF5; --lav-ink:#3F6E9E; --mint:#FFF2B2; --mint-ink:#7A5E1E;
   --sage:#7FA8D6; --brown:#5E442E; --taupe:#A08C74; --beige:#FFF7D6;
   --warm:#B5603C; --warm-soft:#FBE4D2; --ok:#3F6E9E; --ok-soft:#E2ECF5;
-  --c-sight:#7FA8D6; --c-food:#D9875A; --c-shop:#E5B53F; --c-cafe:#8B5E3C; --c-stay:#5E442E; --c-move:#A08C74;
+  --c-sight:#7FA8D6; --c-food:#D9875A; --c-shop:#E5B53F; --c-cafe:#8B5E3C; --c-stay:#5E442E; --c-move:#A08C74; --c-beauty:#D46F93;
   --tiles:saturate(.55) sepia(.15) brightness(1.03);
   --f-body:"Outfit","Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
   --f-ko:"Outfit","Noto Sans KR","Apple SD Gothic Neo",sans-serif;
@@ -36,7 +36,7 @@
   --pink:#4A3B1E; --pink-ink:#FFE08A; --lav:#2B3B4D; --lav-ink:#A8C6E7; --mint:#463C22; --mint-ink:#FFEFB9;
   --sage:#A8C6E7; --brown:#D9B48F; --taupe:#B5A288; --beige:#3D3529;
   --warm:#F09A6E; --warm-soft:#45291C; --ok:#A8C6E7; --ok-soft:#2B3B4D;
-  --c-sight:#A8C6E7; --c-food:#F09A6E; --c-shop:#FFE08A; --c-cafe:#D9B48F; --c-stay:#FFF2B2; --c-move:#B5A288;
+  --c-sight:#A8C6E7; --c-food:#F09A6E; --c-shop:#FFE08A; --c-cafe:#D9B48F; --c-stay:#FFF2B2; --c-move:#B5A288; --c-beauty:#F2A3BF;
   --tiles:invert(1) hue-rotate(180deg) brightness(.9) contrast(.85) saturate(.5); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#1E2833; --surface:#2A2620; --card:#322C24; --sunk:#3D3529; --line:#4A402F;
@@ -45,7 +45,7 @@
   --pink:#4A3B1E; --pink-ink:#FFE08A; --lav:#2B3B4D; --lav-ink:#A8C6E7; --mint:#463C22; --mint-ink:#FFEFB9;
   --sage:#A8C6E7; --brown:#D9B48F; --taupe:#B5A288; --beige:#3D3529;
   --warm:#F09A6E; --warm-soft:#45291C; --ok:#A8C6E7; --ok-soft:#2B3B4D;
-  --c-sight:#A8C6E7; --c-food:#F09A6E; --c-shop:#FFE08A; --c-cafe:#D9B48F; --c-stay:#FFF2B2; --c-move:#B5A288;
+  --c-sight:#A8C6E7; --c-food:#F09A6E; --c-shop:#FFE08A; --c-cafe:#D9B48F; --c-stay:#FFF2B2; --c-move:#B5A288; --c-beauty:#F2A3BF;
   --tiles:invert(1) hue-rotate(180deg) brightness(.9) contrast(.85) saturate(.5); color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -263,7 +263,7 @@ nav.tabs .fab svg{width:26px;height:26px;stroke-width:2}
 
 <script>
 const DAYS=[{n:1,date:"2026-12-12",d:"12/12",w:"週六"},{n:2,date:"2026-12-13",d:"12/13",w:"週日"},{n:3,date:"2026-12-14",d:"12/14",w:"週一"},{n:4,date:"2026-12-15",d:"12/15",w:"週二"}];
-const CATS={sight:{label:"景點",c:"--c-sight"},food:{label:"美食",c:"--c-food"},shop:{label:"購物",c:"--c-shop"},cafe:{label:"咖啡",c:"--c-cafe"},stay:{label:"住宿候選",c:"--c-stay"},move:{label:"交通點",c:"--c-move"}};
+const CATS={sight:{label:"景點",c:"--c-sight"},food:{label:"美食",c:"--c-food"},shop:{label:"購物",c:"--c-shop"},beauty:{label:"醫美",c:"--c-beauty"},cafe:{label:"咖啡",c:"--c-cafe"},stay:{label:"住宿候選",c:"--c-stay"},move:{label:"交通點",c:"--c-move"}};
 const AREAS=[["弘大・延南洞",37.5565,126.9237],["明洞",37.5636,126.9850],["首爾站",37.5547,126.9707],["東大門",37.5665,127.0092],["鍾路・仁寺洞",37.5735,126.9860],["聖水洞",37.5446,127.0557],["江南",37.4979,127.0276],["汝矣島",37.5219,126.9245]];
 const TABS=[["home","總覽",'<path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/>'],["plan","行程",'<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/>'],["fab","新增",'<path d="M12 5v14M5 12h14"/>'],["spots","景點",'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle class="nofill" cx="12" cy="9.5" r="2.4"/>'],["list","清單",'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>']];
 
