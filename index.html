@@ -377,7 +377,7 @@ function qFlight(f){
 }
 /* ---------- plan ---------- */
 function sortDay(a,b){return (a.time||"99")<(b.time||"99")?-1:(a.time||"99")>(b.time||"99")?1:(a.order||0)-(b.order||0)}
-function placeRow(p,showTime=true){const c=CATS[p.cat]||CATS.sight;return `<button class="row" data-open="places:${p.id}">${showTime?`<span class="time">${esc(p.time||"—")}</span>`:""}<span class="swatch" style="background:var(${c.c})"></span><span class="body"><div class="t1">${esc(p.name)}${p.nameKo?` <span class="ko muted small">${esc(p.nameKo)}</span>`:""}</div><div class="t2">${esc(c.label)}${p.area?"・"+esc(p.area):""}${p.note?"・"+esc(p.note):""}</div></span></button>`}
+function placeRow(p,showTime=true){const c=CATS[p.cat]||CATS.sight;return `<div class="row" data-open="places:${p.id}">${showTime?`<span class="time">${esc(p.time||"—")}</span>`:""}<span class="swatch" style="background:var(${c.c})"></span><div class="body"><button class="rowbtn" data-open="places:${p.id}"><div class="t1">${esc(p.name)}${p.nameKo?` <span class="ko muted small">${esc(p.nameKo)}</span>`:""}</div><div class="t2">${esc(c.label)}${p.area?"・"+esc(p.area):""}${p.note?"・"+esc(p.note):""}</div></button>${linkRow(p.links||p.url)}</div></div>`}
 function vPlan(){
   return `${loadingNote()}${segBar([["days","每日行程"],["route","乘車動線"]],S.planSeg,"data-pseg")}${S.planSeg==="route"?vRoute():vDays()}`;
 }
