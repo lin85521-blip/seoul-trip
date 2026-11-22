@@ -267,7 +267,7 @@ const CATS={sight:{label:"景點",c:"--c-sight"},food:{label:"美食",c:"--c-foo
 const AREAS=[["弘大・延南洞",37.5565,126.9237],["明洞",37.5636,126.9850],["首爾站",37.5547,126.9707],["東大門",37.5665,127.0092],["鍾路・仁寺洞",37.5735,126.9860],["聖水洞",37.5446,127.0557],["江南",37.4979,127.0276],["汝矣島",37.5219,126.9245]];
 const TABS=[["home","總覽",'<path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-6h4v6"/>'],["plan","行程",'<rect x="4" y="5" width="16" height="15" rx="3"/><path d="M4 10h16M9 3v4M15 3v4"/>'],["fab","新增",'<path d="M12 5v14M5 12h14"/>'],["spots","景點",'<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle class="nofill" cx="12" cy="9.5" r="2.4"/>'],["list","清單",'<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>']];
 
-const S={tab:"home",places:[],items:[],expenses:[],flights:[],routes:[],notes:[],meta:{},canWrite:true,spotGroup:"area",mapCats:new Set(Object.keys(CATS)),listSeg:"prep",planSeg:"days",homeDay:0,sel:null,loaded:false};
+const S={tab:"home",places:[],items:[],expenses:[],flights:[],routes:[],notes:[],meta:{},canWrite:true,spotGroup:"area",mapCats:new Set(Object.keys(CATS)),areaOff:new Set(),listSeg:"prep",planSeg:"days",homeDay:0,sel:null,loaded:false};
 /* 舊的分頁名稱（動線、須知）現在是行程、清單裡的子分頁 */
 function goTab(t){if(t==="route"){S.tab="plan";S.planSeg="route"}else if(t==="info"){S.tab="list";S.listSeg="info"}else if(t==="map"||t==="spots")S.tab="spots";else if(t==="split"){S.tab="list";S.listSeg="split"}else if(["home","plan","list"].includes(t))S.tab=t}
 try{const t=localStorage.getItem("trip.tab");if(t)goTab(t);const ls=localStorage.getItem("trip.listSeg");if(ls)S.listSeg=ls}catch(e){}
@@ -401,13 +401,20 @@ function sortSpot(a,b){return ((dayOf(a)?.n)||9)-((dayOf(b)?.n)||9)||sortDay(a,b
 function spotRow(p){const c=CATS[p.cat]||CATS.sight;const d=dayOf(p);const sub=S.spotGroup==="area"?c.label:areaOf(p);
   return `<div class="row" data-open="places:${p.id}"><span class="swatch" style="background:var(${c.c})"></span><div class="body"><button class="rowbtn" data-open="places:${p.id}"><div class="t1">${esc(p.name)}${p.nameKo?` <span class="ko muted small">${esc(p.nameKo)}</span>`:""}</div><div class="t2">${esc(sub)}${p.note?"・"+esc(p.note):""}</div></button>${linkRow(p.links||p.url)}</div><span class="pill ${d?"ok":"todo"}">${d?d.d+(p.time?" "+esc(p.time):""):"未排"}</span></div>`}
 function vSpots(){
-  const catChips=Object.entries(CATS).map(([k,v])=>`<button class="chip ${S.mapCats.has(k)?"on":""}" data-mapcat="${k}"><span class="swatch" style="margin:0;background:var(${v.c})"></span>${v.label}</button>`).join("");
-  const ps=S.places.filter(p=>S.mapCats.has(p.cat||"sight"));
+  const byArea=S.spotGroup==="area";
+  const areas=(()=>{const m=new Map();S.places.forEach(p=>{const a=areaOf(p);m.set(a,(m.get(a)||0)+1)});return [...m].sort((x,y)=>(x[0]===NO_AREA)-(y[0]===NO_AREA)||y[1]-x[1]).map(x=>x[0])})();
+  const allOn=byArea?Object.keys(CATS).every(k=>S.mapCats.has(k)):areas.every(a=>!S.areaOff.has(a));
+  const allChip=`<button class="chip ${allOn?"on":""}" data-filterall="1">${allOn?"全部取消":"全選"}</button>`;
+  const chips=byArea
+    ?Object.entries(CATS).map(([k,v])=>`<button class="chip ${S.mapCats.has(k)?"on":""}" data-mapcat="${k}"><span class="swatch" style="margin:0;background:var(${v.c})"></span>${v.label}</button>`).join("")
+    :areas.map(a=>`<button class="chip ${S.areaOff.has(a)?"":"on"}" data-maparea="${esc(a)}">${esc(a)}</button>`).join("");
+  const catChips=allChip+chips;
+  const ps=S.places.filter(p=>byArea?S.mapCats.has(p.cat||"sight"):!S.areaOff.has(areaOf(p)));
   let groups;
   if(S.spotGroup==="area"){const m=new Map();ps.forEach(p=>{const a=areaOf(p);if(!m.has(a))m.set(a,[]);m.get(a).push(p)});
     groups=[...m].sort((x,y)=>(x[0]===NO_AREA)-(y[0]===NO_AREA)||y[1].length-x[1].length).map(([a,arr])=>({t:a,arr,add:a===NO_AREA?"":addBtn("places","加入",`data-day="0" data-area="${esc(a)}"`)}))}
   else groups=Object.keys(CATS).map(k=>({t:CATS[k].label,arr:ps.filter(p=>(p.cat||"sight")===k),add:addBtn("places","加入",`data-day="0" data-cat="${k}"`)})).filter(g=>g.arr.length);
-  const body=groups.length?groups.map(g=>`<section class="sec"><div class="sec-h"><h2>${esc(g.t)}<span class="cnt">${g.arr.length}</span></h2>${g.add}</div><div class="list">${g.arr.slice().sort(sortSpot).map(spotRow).join("")}</div></section>`).join(""):`<div class="empty" style="margin-top:16px">${S.places.length?"沒有符合的地點，試試多選幾個種類。":"還沒有地點，按下方「＋」新增。"}</div>`;
+  const body=groups.length?groups.map(g=>`<section class="sec"><div class="sec-h"><h2>${esc(g.t)}<span class="cnt">${g.arr.length}</span></h2>${g.add}</div><div class="list">${g.arr.slice().sort(sortSpot).map(spotRow).join("")}</div></section>`).join(""):`<div class="empty" style="margin-top:16px">${S.places.length?(byArea?"沒有符合的地點，試試多選幾個種類。":"沒有符合的地點，試試多選幾個地區。"):"還沒有地點，按下方「＋」新增。"}</div>`;
   return `${loadingNote()}${segBar([["area","依地區"],["cat","依種類"]],S.spotGroup,"data-sgroup")}
   <div class="chips" style="margin-top:12px">${catChips}</div>
   <div class="sec-h" style="margin-top:14px"><span class="small muted">共 ${ps.length} 個地點・點一下可以看導航</span>${addBtn("places","地點",'data-day="0"')}</div>
@@ -573,6 +580,8 @@ document.addEventListener("click",async e=>{
   const mv=t.closest("[data-mv]");if(mv){const f=mv.closest(".field"),d=+mv.dataset.mv,o=d<0?f.previousElementSibling:f.nextElementSibling;if(o&&o.querySelector("[data-mv]")){d<0?o.before(f):o.after(f);mv.focus()}return}
   const tg=t.closest("[data-toggle]");if(tg){const it=S.items.find(i=>i.id===tg.dataset.toggle);if(!it)return;it.done=!it.done;render();await save("items",it.id,{...it});return}
   const sgr=t.closest("[data-sgroup]");if(sgr){S.spotGroup=sgr.dataset.sgroup;render();return}
+  const fa=t.closest("[data-filterall]");if(fa){if(S.spotGroup==="area"){const all=Object.keys(CATS).every(k=>S.mapCats.has(k));S.mapCats=new Set(all?[]:Object.keys(CATS))}else{const areas=[...new Set(S.places.map(areaOf))];const all=areas.every(a=>!S.areaOff.has(a));S.areaOff=new Set(all?areas:[])}render();return}
+  const ma=t.closest("[data-maparea]");if(ma){const a=ma.dataset.maparea;S.areaOff.has(a)?S.areaOff.delete(a):S.areaOff.add(a);render();return}
   const mc=t.closest("[data-mapcat]");if(mc){const k=mc.dataset.mapcat;S.mapCats.has(k)?S.mapCats.delete(k):S.mapCats.add(k);render();return}
   const sg=t.closest("[data-seg]");if(sg){S.listSeg=sg.dataset.seg;try{localStorage.setItem("trip.listSeg",S.listSeg)}catch(e){}render();return}
   if(t.id==="delBtn"){if(!sheetState.del){sheetState.del=true;t.textContent="再按一次確定刪除";return}const{type,id}=sheetState;closeSheet();S[type]=S[type].filter(x=>x.id!==id);render();await send("deleteDoc",[type,id],"已刪除")}
